@@ -4,20 +4,24 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 )
 
 type Messenger struct {
 	// if not sending messages to a user, you must include the -100 prefix
 	ChatID   string
+	TopicID  int64
 	botToken string
 }
 
-// NewMessenger returns a new Messenger instance, optionally validating the bot token and chat ID
-func NewMessenger(botToken, chatID string, validate bool) (*Messenger, error) {
+// NewMessenger returns a new Messenger instance, optionally validating the bot token and chat ID.
+// set topicID to -1 if not sending messages to a supergroup.
+func NewMessenger(botToken, chatID string, topicID int64, validate bool) (*Messenger, error) {
 	if !validate {
 		return &Messenger{
 			ChatID:   chatID,
+			TopicID:  topicID,
 			botToken: botToken,
 		}, nil
 	}
@@ -44,17 +48,41 @@ func NewMessenger(botToken, chatID string, validate bool) (*Messenger, error) {
 		return nil, fmt.Errorf("got non-200 status code when validating chat ID: %s", chatResp.Status)
 	}
 
+	if topicID != -1 {
+		body, err := io.ReadAll(chatResp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read chat response body: %w", err)
+		}
+
+		var chat struct {
+			Type string `json:"type"`
+		}
+		if err := json.Unmarshal(body, &chat); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal chat response: %w", err)
+		}
+
+		if chat.Type != "supergroup" {
+			return nil, fmt.Errorf("chat type must be supergroup for topic support, got: %s", chat.Type)
+		}
+	}
+
 	return &Messenger{
 		ChatID:   chatID,
+		TopicID:  topicID,
 		botToken: botToken,
 	}, nil
 }
 
 func (m Messenger) SendMessage(text string) error {
-	payload, err := json.Marshal(map[string]string{
+	payloadData := map[string]interface{}{
 		"chat_id": m.ChatID,
 		"text":    text,
-	})
+	}
+	if m.TopicID != -1 {
+		payloadData["message_thread_id"] = m.TopicID
+	}
+
+	payload, err := json.Marshal(payloadData)
 	if err != nil {
 		return fmt.Errorf("failed to marshal payload: %w", err)
 	}
