@@ -55,14 +55,16 @@ func NewMessenger(botToken, chatID string, topicID int64, validate bool) (*Messe
 		}
 
 		var chat struct {
-			Type string `json:"type"`
+			Result struct {
+				Type string `json:"type"`
+			} `json:"result"`
 		}
 		if err := json.Unmarshal(body, &chat); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal chat response: %w", err)
 		}
 
-		if chat.Type != "supergroup" {
-			return nil, fmt.Errorf("chat type must be supergroup for topic support, got: %s", chat.Type)
+		if chat.Result.Type != "supergroup" {
+			return nil, fmt.Errorf("chat type must be supergroup for topic support, got: %s", chat.Result.Type)
 		}
 	}
 
