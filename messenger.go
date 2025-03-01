@@ -10,19 +10,21 @@ import (
 
 type Messenger struct {
 	// if not sending messages to a user, you must include the -100 prefix
-	ChatID   string
-	TopicID  int64
-	botToken string
+	chatID    string
+	topicID   int64
+	parseMode ParseMode
+	botToken  string
 }
 
 // NewMessenger returns a new Messenger instance, optionally validating the bot token and chat ID.
 // set topicID to -1 if not sending messages to a supergroup.
-func NewMessenger(botToken, chatID string, topicID int64, validate bool) (*Messenger, error) {
+func NewMessenger(botToken, chatID string, topicID int64, parseMode ParseMode, validate bool) (*Messenger, error) {
 	if !validate {
 		return &Messenger{
-			ChatID:   chatID,
-			TopicID:  topicID,
-			botToken: botToken,
+			chatID:    chatID,
+			topicID:   topicID,
+			parseMode: parseMode,
+			botToken:  botToken,
 		}, nil
 	}
 
@@ -69,19 +71,21 @@ func NewMessenger(botToken, chatID string, topicID int64, validate bool) (*Messe
 	}
 
 	return &Messenger{
-		ChatID:   chatID,
-		TopicID:  topicID,
-		botToken: botToken,
+		chatID:    chatID,
+		topicID:   topicID,
+		parseMode: parseMode,
+		botToken:  botToken,
 	}, nil
 }
 
 func (m Messenger) SendMessage(text string) error {
 	payloadData := map[string]interface{}{
-		"chat_id": m.ChatID,
-		"text":    text,
+		"chat_id":    m.chatID,
+		"text":       text,
+		"parse_mode": m.parseMode,
 	}
-	if m.TopicID != -1 {
-		payloadData["message_thread_id"] = m.TopicID
+	if m.topicID != -1 {
+		payloadData["message_thread_id"] = m.topicID
 	}
 
 	payload, err := json.Marshal(payloadData)
