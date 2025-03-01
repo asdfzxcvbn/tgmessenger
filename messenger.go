@@ -79,7 +79,7 @@ func NewMessenger(botToken, chatID string, topicID int64, parseMode ParseMode, v
 }
 
 func (m Messenger) SendMessage(text string) error {
-	payloadData := map[string]interface{}{
+	payloadData := map[string]any{
 		"chat_id":    m.chatID,
 		"text":       text,
 		"parse_mode": m.parseMode,
