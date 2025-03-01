@@ -110,8 +110,13 @@ func (m Messenger) SendMessage(text string) error {
 	}
 	defer resp.Body.Close()
 
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("got non-200 status code: %s", resp.Status)
+		return fmt.Errorf("got non-200 status code: %s; body: %s", resp.Status, string(body))
 	}
 
 	return nil
